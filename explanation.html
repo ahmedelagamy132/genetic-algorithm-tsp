@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How it works · Evolutionary Router</title>
+  <meta name="description" content="How a genetic algorithm solves the Travelling Salesman Problem, explained." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="doc">
+  <nav class="doc-nav">
+    <a class="back" href="index.html"><span aria-hidden="true">&larr;</span> Back to the instrument</a>
+    <span class="tag">How it works</span>
+  </nav>
+
+  <main class="doc-wrap doc">
+    <header class="doc-hero">
+      <p class="eyebrow">Genetic algorithm &middot; Travelling Salesman</p>
+      <h1>Evolution as a search strategy</h1>
+      <p class="lede">
+        The instrument breeds better and better delivery routes the way nature breeds
+        better organisms: keep what works, recombine it, mutate it, repeat. Here is
+        exactly what is happening behind the glowing line.
+      </p>
+    </header>
+
+    <section>
+      <h2>The problem</h2>
+      <p>
+        A salesman must visit every city once and return home by the shortest possible
+        route. Easy to state, brutal to solve. With <strong>n</strong> cities there are
+        <span class="mono-em">(n&minus;1)! / 2</span> distinct tours.
+      </p>
+      <p>
+        At 10 cities that is about 181 000 routes: a computer checks them instantly. At
+        just <strong>22 cities</strong>, the default here, it is roughly
+        <span class="mono-em">1.4 &times; 10<sup>19</sup></span> &mdash; more tours than
+        seconds since the dinosaurs. You cannot try them all. You need to
+        <strong>search intelligently</strong>, and that is what a genetic algorithm does.
+      </p>
+    </section>
+
+    <section>
+      <h2>The encoding</h2>
+      <p>
+        A genetic algorithm borrows four ideas from biology. To use it on any problem you
+        decide what a "creature" is and what makes one fitter than another.
+      </p>
+
+      <div class="keytable">
+        <div class="row">
+          <div class="term">Chromosome <small>an individual</small></div>
+          <div class="def">One candidate tour: an ordered list of cities, e.g. <span class="mono-em">[4, 1, 7, 2, &hellip;]</span>. Every city appears exactly once, so a tour is a <em>permutation</em>.</div>
+        </div>
+        <div class="row">
+          <div class="term">Fitness <small>how good</small></div>
+          <div class="def">Shorter is better, so fitness is <span class="mono-em">1 / tour length</span>. The whole population is judged on this single number.</div>
+        </div>
+        <div class="row">
+          <div class="term">Population <small>the gene pool</small></div>
+          <div class="def">A few hundred tours held at once. Diversity here is what lets the search escape dead ends.</div>
+        </div>
+        <div class="row">
+          <div class="term">Generation <small>one cycle</small></div>
+          <div class="def">Selection, crossover and mutation produce a fresh population from the current one. Repeat thousands of times.</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>One generation, step by step</h2>
+      <div class="figure">
+        <div class="flow">
+          <div class="node">Population<small>tours ranked</small></div>
+          <div class="arrow" aria-hidden="true">&rarr;</div>
+          <div class="node">Select<small>tournament</small></div>
+          <div class="arrow" aria-hidden="true">&rarr;</div>
+          <div class="node">Crossover<small>OX / PMX</small></div>
+          <div class="arrow" aria-hidden="true">&rarr;</div>
+          <div class="node">Mutate<small>inversion / swap</small></div>
+          <div class="arrow" aria-hidden="true">&rarr;</div>
+          <div class="node">Next gen<small>+ elites</small></div>
+        </div>
+        <p class="cap">The loop the simulation runs, many times per second.</p>
+      </div>
+
+      <h3>1 &middot; Selection &mdash; survival of the fitter</h3>
+      <p>
+        To choose a parent, pick <span class="mono-em">k</span> tours at random and keep
+        the shortest. This is <strong>tournament selection</strong>. A larger
+        <span class="mono-em">k</span> (the <em>selection pressure</em> slider) means
+        fitter parents win more often: the search converges faster but explores less,
+        risking a merely-good local optimum. Small <span class="mono-em">k</span> keeps
+        underdogs in play and the search broad.
+      </p>
+
+      <h3>2 &middot; Crossover &mdash; recombination</h3>
+      <p>
+        Two parent tours produce a child that inherits structure from both. You cannot
+        just splice halves: that would visit some cities twice and skip others. Order
+        crossover <span class="mono-em">(OX)</span> keeps one parent's slice intact, then
+        fills the rest in the second parent's order, so the child is always a valid tour.
+      </p>
+      <div class="figure">
+        <div class="gene"><span class="lbl">Parent A</span>
+          <span class="cell">3</span><span class="cell keep">1</span><span class="cell keep">6</span><span class="cell keep">2</span><span class="cell">5</span><span class="cell">4</span>
+        </div>
+        <div class="gene"><span class="lbl">Parent B</span>
+          <span class="cell">4</span><span class="cell">5</span><span class="cell">2</span><span class="cell">6</span><span class="cell">1</span><span class="cell">3</span>
+        </div>
+        <div class="gene"><span class="lbl">Child</span>
+          <span class="cell fill">4</span><span class="cell keep">1</span><span class="cell keep">6</span><span class="cell keep">2</span><span class="cell fill">5</span><span class="cell fill">3</span>
+        </div>
+        <p class="cap">Brass cells are copied from A; cool cells are filled from B in its own order, skipping anything already present.</p>
+      </div>
+      <p>
+        <strong>PMX</strong> (partially mapped crossover) is an alternative that swaps a
+        slice and then repairs the duplicates it creates through a position mapping. Both
+        are offered so you can watch them behave differently on the same map.
+      </p>
+
+      <h3>3 &middot; Mutation &mdash; the spark of novelty</h3>
+      <p>
+        Without mutation the population quickly goes stale: every child is a remix of
+        genes that already exist. Mutation injects new structure.
+      </p>
+      <ul>
+        <li><strong>Inversion</strong> reverses a random segment of the tour. Geometrically this <em>uncrosses</em> a tangle of routes, which is why it is so effective on the map. It is the default.</li>
+        <li><strong>Swap</strong> simply exchanges two stops. Gentler and more random; useful to see how a weaker operator slows convergence.</li>
+      </ul>
+      <p>
+        Turn the <strong>mutation rate</strong> to zero and the run freezes at whatever it
+        had; turn it too high and good tours get shredded faster than selection can save
+        them. The sweet spot is the lesson.
+      </p>
+
+      <h3>4 &middot; Elitism &mdash; never lose the best</h3>
+      <p>
+        Crossover and mutation are gambles, so the very best tours are copied into the
+        next generation untouched. With elitism on, the brass "best so far" line can only
+        ever go down. Set elitism to zero and watch the best wobble as good solutions are
+        occasionally lost.
+      </p>
+    </section>
+
+    <section>
+      <h2>Reading the instrument</h2>
+      <ul>
+        <li>The <strong>brass line</strong> on the map is the best tour found so far. Faint lines behind it are other members of the population still searching.</li>
+        <li>The <strong>convergence chart</strong> plots the best tour (brass) and the population average (cool) over generations. A widening gap means the elite are pulling ahead of the pack.</li>
+        <li><strong>Stagnant</strong> counts generations since the last improvement &mdash; a sign the search has settled, or is stuck.</li>
+        <li><strong>Pin run</strong> freezes the current convergence curve as a dashed ghost. Change a parameter, reset, and race the new run against it. Because the cities are seeded, the comparison is fair.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="tag">An honest caveat</span>
+        <p>
+          A genetic algorithm finds a <em>very good</em> tour, not a provably optimal one.
+          For a live, visual, tunable search across an astronomically large space, that
+          trade is exactly the point: you can watch a sensible answer emerge in seconds.
+        </p>
+      </div>
+    </section>
+
+    <footer class="doc-foot">
+      <p>Real-coded genetic algorithm &middot; Order &amp; PMX crossover &middot; inversion &amp; swap mutation</p>
+      <a class="back" href="index.html"><span aria-hidden="true">&larr;</span> Run it</a>
+    </footer>
+  </main>
+</body>
+</html>

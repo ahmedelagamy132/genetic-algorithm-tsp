@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evolutionary Router · TSP Genetic Algorithm</title>
+  <meta name="description" content="A genetic algorithm solving the Travelling Salesman Problem in real time." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <!-- ============================== Top bar ============================== -->
+  <header id="topbar" class="panel">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">&#x2726;</span>
+      <div class="brand-txt">
+        <h1>Evolutionary Router</h1>
+        <p>Travelling Salesman &middot; genetic algorithm</p>
+      </div>
+    </div>
+
+    <div class="transport" role="group" aria-label="Run controls">
+      <button id="btn-play" class="tbtn" data-on="1" title="Play / pause (Space)">
+        <span class="ico" aria-hidden="true">&#9654;</span><span class="label">Play</span>
+      </button>
+      <button id="btn-step" class="tbtn" title="Advance one generation (S)">
+        <span class="ico" aria-hidden="true">&#9197;</span><span class="label">Step</span>
+      </button>
+      <button id="btn-reset" class="tbtn" title="Restart from random tours (R)">
+        <span class="ico" aria-hidden="true">&#8634;</span><span class="label">Reset</span>
+      </button>
+      <button id="btn-regen" class="tbtn" title="Generate a new set of cities">
+        <span class="ico" aria-hidden="true">&#10022;</span><span class="label">New map</span>
+      </button>
+    </div>
+
+    <div class="status">
+      <div class="stat">
+        <span class="k">generation</span>
+        <span id="r-gen" class="v mono">0</span>
+      </div>
+      <div class="stat hero">
+        <span class="k">shortest tour</span>
+        <span id="r-best" class="v mono">&mdash;</span>
+      </div>
+      <span id="run-state" class="badge" data-on="1">RUNNING</span>
+    </div>
+  </header>
+
+  <!-- ============================== Rail ============================== -->
+  <aside id="rail" class="panel" aria-label="Algorithm parameters">
+    <h2 class="rail-title">Parameters</h2>
+
+    <div class="ctrl">
+      <div class="ctrl-head"><label for="c-cities">Cities</label><output id="v-cities">22 cities</output></div>
+      <input id="c-cities" type="range" min="5" max="60" step="1" value="22" />
+      <p class="hint">size of the map. more cities &rarr; vastly harder problem</p>
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-head"><label for="c-pop">Population</label><output id="v-pop">220</output></div>
+      <input id="c-pop" type="range" min="20" max="600" step="10" value="220" />
+      <p class="hint">candidate tours kept alive each generation</p>
+    </div>
+
+    <hr class="rail-sep" />
+
+    <div class="ctrl">
+      <div class="ctrl-head"><label for="c-mut">Mutation rate</label><output id="v-mut">22%</output></div>
+      <input id="c-mut" type="range" min="0" max="0.8" step="0.01" value="0.22" />
+      <p class="hint">chance of a random edit per child &mdash; the engine of exploration</p>
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-head"><label>Mutation operator</label></div>
+      <div id="seg-mut" class="seg" role="group" aria-label="Mutation operator">
+        <button data-val="inversion" data-on="1">Inversion</button>
+        <button data-val="swap" data-on="0">Swap</button>
+      </div>
+      <p class="hint">inversion reverses a segment (untangles); swap trades two stops</p>
+    </div>
+
+    <hr class="rail-sep" />
+
+    <div class="ctrl">
+      <div class="ctrl-head"><label for="c-tourn">Selection pressure</label><output id="v-tourn">k = 5</output></div>
+      <input id="c-tourn" type="range" min="2" max="12" step="1" value="5" />
+      <p class="hint">tournament size. higher &rarr; fitter parents, faster but greedier</p>
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-head"><label>Crossover</label></div>
+      <div id="seg-cx" class="seg" role="group" aria-label="Crossover operator">
+        <button data-val="ox" data-on="1">Order (OX)</button>
+        <button data-val="pmx" data-on="0">PMX</button>
+      </div>
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-head"><label for="c-elite">Elitism</label><output id="v-elite">2</output></div>
+      <input id="c-elite" type="range" min="0" max="12" step="1" value="2" />
+      <p class="hint">best tours copied forward untouched, so progress never reverses</p>
+    </div>
+
+    <hr class="rail-sep" />
+
+    <div class="ctrl">
+      <div class="ctrl-head"><label for="c-speed">Speed</label><output id="v-speed">12/s</output></div>
+      <input id="c-speed" type="range" min="1" max="120" step="1" value="12" />
+      <p class="hint">generations per second</p>
+    </div>
+
+    <p class="rail-foot">
+      Cities are seeded, so a tuning comparison is fair.
+      <a href="explanation.html">How it works &rarr;</a>
+    </p>
+  </aside>
+
+  <!-- ============================== Convergence ============================== -->
+  <section id="chartpanel" class="panel" aria-label="Convergence and metrics">
+    <div class="chart-head">
+      <h2>Convergence</h2>
+      <div class="legend">
+        <span class="l-best"><i></i>best</span>
+        <span class="l-avg"><i></i>average</span>
+        <span class="l-pin"><i></i>pinned</span>
+      </div>
+    </div>
+
+    <canvas id="chart"></canvas>
+
+    <div class="metrics">
+      <div class="metric"><span class="k">average</span><span id="r-avg" class="v mono">&mdash;</span></div>
+      <div class="metric"><span class="k">improved</span><span id="r-improve" class="v mono">0%</span></div>
+      <div class="metric"><span class="k">cities</span><span id="r-cities" class="v mono">22</span></div>
+      <div class="metric"><span class="k">stagnant</span><span id="r-stagnant" class="v mono">0</span></div>
+    </div>
+
+    <div class="compare">
+      <div class="compare-row">
+        <button id="btn-pin" class="cbtn" title="Snapshot this run to race the next one against">Pin run</button>
+        <button id="btn-clearpin" class="cbtn" hidden>Clear</button>
+        <span id="pin-label"></span>
+      </div>
+      <div id="pin-row" hidden>
+        <span class="k">pinned best</span>
+        <span class="v"><span id="r-pinned">&mdash;</span> &nbsp; <span id="r-delta"></span></span>
+      </div>
+    </div>
+  </section>
+
+  <script src="genetic-algorithm.js"></script>
+</body>
+</html>

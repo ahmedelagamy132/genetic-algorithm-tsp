@@ -1,0 +1,402 @@
+/* ============================================================================
+   Nautical chart at night — design system for the Evolutionary Router.
+   Cool ink ground, a single committed brass signal for the champion tour,
+   instrument-grade mono readouts. OKLCH only; no pure #000/#fff; neutrals
+   tinted toward the ink hue (~248).
+   ============================================================================ */
+:root {
+  --bg-deep:   oklch(0.13  0.030 248);
+  --bg:        oklch(0.165 0.034 248);
+  --panel:     oklch(0.205 0.036 248 / 0.92);
+  --panel-2:   oklch(0.245 0.038 248);
+  --well:      oklch(0.150 0.030 248);
+  --line:      oklch(0.40  0.030 248 / 0.55);
+  --line-soft: oklch(0.36  0.026 248 / 0.32);
+  --ink:       oklch(0.94  0.018 90);
+  --ink-dim:   oklch(0.74  0.024 240);
+  --ink-faint: oklch(0.58  0.026 240);
+  --champ:     oklch(0.80  0.135 70);
+  --champ-hi:  oklch(0.88  0.115 75);
+  --accent:    oklch(0.74  0.085 215);
+  --accent-d:  oklch(0.62  0.085 215);
+  --ghost:     oklch(0.62  0.040 240 / 0.10);
+  --good:      oklch(0.80  0.130 150);
+  --warn:      oklch(0.76  0.140 45);
+
+  --r:    13px;
+  --r-sm: 8px;
+  --shadow: 0 22px 60px -26px oklch(0.06 0.03 248 / 0.9);
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono", Consolas, monospace;
+  --sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+
+  --rail-w: 320px;
+  --bar-h:  62px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  background:
+    radial-gradient(120% 80% at 60% -10%, oklch(0.24 0.05 248 / 0.5), transparent 60%),
+    radial-gradient(90% 70% at 8% 108%, oklch(0.20 0.045 230 / 0.4), transparent 60%),
+    var(--bg-deep);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---- The map fills the area between the top bar and the rail.
+   <canvas> is a replaced element, so explicit width/height are required;
+   left/right insets alone fall back to its intrinsic 300x150. ---- */
+#stage {
+  position: fixed;
+  top: var(--bar-h); left: 0;
+  width: calc(100vw - var(--rail-w));
+  height: calc(100vh - var(--bar-h));
+  display: block;
+  background:
+    radial-gradient(120% 120% at 50% 35%, oklch(0.185 0.036 248), var(--bg) 70%, var(--bg-deep));
+}
+
+.panel {
+  position: fixed;
+  z-index: 5;
+  background: var(--panel);
+  backdrop-filter: blur(7px) saturate(1.05);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+}
+
+/* ============================================================================
+   Top bar
+   ============================================================================ */
+#topbar {
+  top: 12px; left: 12px; right: calc(var(--rail-w) + 12px);
+  height: calc(var(--bar-h) - 16px);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; padding: 0 16px;
+}
+.brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.brand .mark {
+  width: 30px; height: 30px; flex: none;
+  display: grid; place-items: center;
+  color: var(--champ);
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--well);
+  font-size: 15px;
+}
+.brand h1 {
+  font-size: 14px; font-weight: 650; letter-spacing: 0.04em;
+  text-transform: uppercase; white-space: nowrap;
+}
+.brand p {
+  font-size: 11px; color: var(--ink-faint); letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.transport { display: flex; gap: 6px; }
+.tbtn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--sans); font-size: 12px; font-weight: 550;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+  background: var(--well);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 7px 12px; cursor: pointer;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.tbtn .ico { font-size: 12px; line-height: 1; }
+.tbtn:hover { color: var(--ink); border-color: var(--accent); }
+.tbtn[data-on="1"] {
+  color: var(--bg-deep); background: var(--accent); border-color: var(--accent);
+}
+.tbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.status { display: flex; align-items: center; gap: 18px; }
+.stat { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.stat .k {
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.13em;
+  color: var(--ink-faint);
+}
+.stat .v { font-size: 15px; color: var(--ink); margin-top: 2px; white-space: nowrap; }
+.stat.hero .v { font-size: 21px; color: var(--champ); font-weight: 500; }
+
+.badge {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  color: var(--ink-faint);
+  border: 1px solid var(--line); border-radius: 20px;
+  padding: 5px 11px 5px 9px;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.badge::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ink-faint);
+}
+.badge[data-on="1"] { color: var(--good); border-color: oklch(0.5 0.09 150 / 0.5); }
+.badge[data-on="1"]::before { background: var(--good); box-shadow: 0 0 8px var(--good); }
+
+/* ============================================================================
+   Control rail
+   ============================================================================ */
+#rail {
+  top: 12px; right: 12px; bottom: 12px; width: calc(var(--rail-w) - 24px);
+  padding: 16px 16px 18px;
+  display: flex; flex-direction: column; gap: 15px;
+  overflow-y: auto;
+}
+.rail-title, .chart-head h2, .compare h2 {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--ink-faint); font-weight: 600;
+}
+.rail-title { padding-bottom: 2px; border-bottom: 1px solid var(--line-soft); }
+
+.ctrl { display: flex; flex-direction: column; gap: 7px; }
+.ctrl-head { display: flex; align-items: baseline; justify-content: space-between; }
+.ctrl-head label {
+  font-size: 12.5px; color: var(--ink); font-weight: 550; letter-spacing: 0.01em;
+}
+.ctrl-head output { font-size: 12px; color: var(--accent); }
+.hint { font-size: 10.5px; color: var(--ink-faint); line-height: 1.35; }
+
+/* Range inputs */
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 4px; border-radius: 3px;
+  background: var(--well);
+  border: 1px solid var(--line-soft);
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg-deep);
+  box-shadow: 0 0 0 1px var(--accent), 0 1px 4px oklch(0.1 0.03 248 / 0.6);
+  transition: transform .12s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.12); }
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg-deep);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+/* Segmented toggles */
+.seg {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  gap: 4px; padding: 4px;
+  background: var(--well); border: 1px solid var(--line-soft); border-radius: var(--r-sm);
+}
+.seg button {
+  font-family: var(--sans); font-size: 11.5px; font-weight: 550;
+  color: var(--ink-dim);
+  background: transparent; border: 0; border-radius: 6px;
+  padding: 7px 6px; cursor: pointer;
+  transition: color .16s, background .16s;
+}
+.seg button:hover { color: var(--ink); }
+.seg button[data-on="1"] {
+  color: var(--bg-deep); background: var(--accent);
+}
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.rail-sep { height: 1px; background: var(--line-soft); border: 0; }
+
+.rail-foot {
+  margin-top: auto; padding-top: 12px;
+  font-size: 10.5px; color: var(--ink-faint); line-height: 1.4;
+}
+.rail-foot a { color: var(--accent); text-decoration: none; }
+.rail-foot a:hover { text-decoration: underline; }
+
+/* ============================================================================
+   Convergence panel (bottom-left, floating over the map)
+   ============================================================================ */
+#chartpanel {
+  left: 12px; bottom: 12px; width: 360px;
+  padding: 13px 14px 12px;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.chart-head { display: flex; align-items: center; justify-content: space-between; }
+.legend { display: flex; gap: 13px; font-size: 10px; color: var(--ink-dim); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 13px; height: 0; border-top: 2px solid; display: inline-block; }
+.legend .l-best i { border-color: var(--champ); }
+.legend .l-avg  i { border-color: var(--accent); opacity: 0.7; }
+.legend .l-pin  i { border-top-style: dashed; border-color: var(--ink-faint); }
+
+#chart { width: 100%; height: 132px; display: block; }
+
+.metrics {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px;
+  padding-top: 9px; border-top: 1px solid var(--line-soft);
+}
+.metric { display: flex; align-items: baseline; justify-content: space-between; }
+.metric .k {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+.metric .v { font-size: 12.5px; color: var(--ink-dim); }
+
+.compare { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.compare-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cbtn {
+  font-family: var(--sans); font-size: 11.5px; font-weight: 550;
+  color: var(--ink-dim); background: var(--well);
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  padding: 6px 11px; cursor: pointer;
+  transition: color .16s, border-color .16s;
+}
+.cbtn:hover { color: var(--ink); border-color: var(--accent); }
+.cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#pin-label { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); }
+#pin-row { display: flex; justify-content: space-between; font-size: 11.5px; }
+#pin-row .k { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
+#pin-row .v { font-family: var(--mono); color: var(--ink-dim); }
+#r-delta[data-sign="good"] { color: var(--good); }
+#r-delta[data-sign="warn"] { color: var(--warn); }
+
+/* ============================================================================
+   Adaptive: keep it usable on a laptop; collapse the rail on small screens
+   ============================================================================ */
+@media (max-width: 1180px) {
+  :root { --rail-w: 280px; }
+  #chartpanel { width: 320px; }
+}
+@media (max-width: 860px) {
+  :root { --rail-w: 0px; --bar-h: 56px; }
+  #rail {
+    width: min(360px, 86vw); top: auto; bottom: 12px; right: 12px;
+    max-height: 56vh;
+  }
+  #chartpanel { display: none; }
+  #topbar { right: 12px; }
+  .brand p { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ============================================================================
+   Explanation page (body.doc) — a reading surface in the same chart-at-night
+   system. Overrides the fixed instrument layout.
+   ============================================================================ */
+body.doc { overflow: auto; }
+
+.doc-wrap { max-width: 720px; margin: 0 auto; padding: 0 28px 120px; }
+
+.doc-nav {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+  max-width: 720px; margin: 0 auto; padding: 16px 28px;
+  background: linear-gradient(var(--bg-deep) 70%, transparent);
+}
+.doc-nav .back {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: var(--ink-dim); text-decoration: none;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  padding: 7px 12px; background: var(--well);
+  transition: color .16s, border-color .16s;
+}
+.doc-nav .back:hover { color: var(--ink); border-color: var(--accent); }
+.doc-nav .tag {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+  color: var(--ink-faint); text-transform: uppercase;
+}
+
+.doc-hero { padding: 26px 0 8px; }
+.doc-hero .eyebrow {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--champ);
+}
+.doc-hero h1 {
+  font-size: clamp(30px, 5vw, 46px); line-height: 1.05; font-weight: 600;
+  letter-spacing: -0.01em; margin: 12px 0 14px;
+}
+.doc-hero .lede { font-size: 17px; line-height: 1.55; color: var(--ink-dim); max-width: 60ch; }
+
+.doc h2 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--champ); font-weight: 600;
+  margin: 52px 0 16px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.doc h3 { font-size: 17px; font-weight: 600; color: var(--ink); margin: 26px 0 8px; }
+.doc p { font-size: 15px; line-height: 1.62; color: var(--ink-dim); margin: 12px 0; max-width: 68ch; }
+.doc p strong { color: var(--ink); font-weight: 600; }
+.doc a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-d); }
+.doc a:hover { color: var(--ink); }
+.doc .mono-em { font-family: var(--mono); color: var(--champ); font-size: 0.92em; }
+
+.doc ul { margin: 12px 0; padding-left: 0; list-style: none; max-width: 68ch; }
+.doc ul li {
+  position: relative; padding-left: 24px; margin: 9px 0;
+  font-size: 15px; line-height: 1.6; color: var(--ink-dim);
+}
+.doc ul li::before {
+  content: ""; position: absolute; left: 4px; top: 10px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--champ);
+}
+.doc ul li strong { color: var(--ink); }
+
+.figure {
+  margin: 22px 0; padding: 18px 20px;
+  background: var(--well); border: 1px solid var(--line-soft); border-radius: var(--r);
+}
+.figure .cap {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-faint); margin-top: 12px;
+}
+.flow {
+  display: flex; align-items: stretch; gap: 0; flex-wrap: wrap;
+  font-family: var(--mono);
+}
+.flow .node {
+  flex: 1 1 0; min-width: 92px; text-align: center;
+  padding: 12px 8px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--panel-2); color: var(--ink); font-size: 12px;
+}
+.flow .node small { display: block; color: var(--ink-faint); font-size: 9.5px; margin-top: 4px; letter-spacing: 0.04em; }
+.flow .arrow { align-self: center; color: var(--champ); padding: 0 9px; font-size: 14px; }
+
+.gene {
+  display: flex; gap: 4px; flex-wrap: wrap; font-family: var(--mono);
+  font-size: 12.5px; margin: 6px 0;
+}
+.gene .cell {
+  width: 27px; height: 27px; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 5px; color: var(--ink-dim);
+  background: var(--panel-2);
+}
+.gene .cell.keep { border-color: var(--champ); color: var(--champ); background: oklch(0.30 0.05 70 / 0.4); }
+.gene .cell.fill { border-color: var(--accent-d); color: var(--accent); }
+.gene .lbl { align-self: center; font-size: 10.5px; color: var(--ink-faint); width: 64px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.keytable { margin: 16px 0; max-width: 68ch; }
+.keytable .row { display: grid; grid-template-columns: 140px 1fr; gap: 14px; padding: 11px 0; border-top: 1px solid var(--line-soft); }
+.keytable .row:last-child { border-bottom: 1px solid var(--line-soft); }
+.keytable .term { font-size: 13px; color: var(--ink); font-weight: 600; }
+.keytable .term small { display: block; font-family: var(--mono); font-weight: 400; color: var(--champ); font-size: 10.5px; margin-top: 3px; letter-spacing: 0.04em; }
+.keytable .def { font-size: 13.5px; line-height: 1.55; color: var(--ink-dim); }
+
+.callout {
+  margin: 26px 0; padding: 16px 18px;
+  background: oklch(0.22 0.04 248 / 0.5); border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.callout p { margin: 0; color: var(--ink-dim); font-size: 14px; }
+.callout .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--champ); display: block; margin-bottom: 7px; }
+
+.doc-foot {
+  margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--line-soft);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.doc-foot p { font-size: 12.5px; color: var(--ink-faint); margin: 0; }
