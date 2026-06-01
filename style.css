@@ -31,7 +31,15 @@
 
   --rail-w: 320px;
   --bar-h:  62px;
+
+  /* Top safe area. Stays 0 standalone; the script bumps it when the page is
+     embedded in a host that paints its own nav bar over the top edge. */
+  --safe-top: 0px;
 }
+
+/* Host chrome (e.g. an "Exit Full Screen" bar) sits over the top edge when we
+   run inside the simulation platform. Reserve room so our header clears it. */
+body.embedded { --safe-top: 56px; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -53,9 +61,9 @@ body {
    left/right insets alone fall back to its intrinsic 300x150. ---- */
 #stage {
   position: fixed;
-  top: var(--bar-h); left: 0;
+  top: calc(var(--bar-h) + var(--safe-top)); left: 0;
   width: calc(100vw - var(--rail-w));
-  height: calc(100vh - var(--bar-h));
+  height: calc(100vh - var(--bar-h) - var(--safe-top));
   display: block;
   background:
     radial-gradient(120% 120% at 50% 35%, oklch(0.185 0.036 248), var(--bg) 70%, var(--bg-deep));
@@ -75,7 +83,7 @@ body {
    Top bar
    ============================================================================ */
 #topbar {
-  top: 12px; left: 12px; right: calc(var(--rail-w) + 12px);
+  top: calc(12px + var(--safe-top)); left: 12px; right: calc(var(--rail-w) + 12px);
   height: calc(var(--bar-h) - 16px);
   display: flex; align-items: center; justify-content: space-between;
   gap: 18px; padding: 0 16px;
@@ -144,7 +152,7 @@ body {
    Control rail
    ============================================================================ */
 #rail {
-  top: 12px; right: 12px; bottom: 12px; width: calc(var(--rail-w) - 24px);
+  top: calc(12px + var(--safe-top)); right: 12px; bottom: 12px; width: calc(var(--rail-w) - 24px);
   padding: 16px 16px 18px;
   display: flex; flex-direction: column; gap: 15px;
   overflow-y: auto;

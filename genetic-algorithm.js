@@ -315,14 +315,42 @@ if (typeof document !== 'undefined') {
   };
 
   // ---- Map projection ----
+  // Fit a square map inside the stage, kept clear of the floating convergence
+  // panel (bottom-left) so every city stays visible regardless of screen size.
   function project(rect) {
-    const m = Math.min(rect.width, rect.height);
-    const inset = Math.max(34, m * 0.07);
-    const w = rect.width - inset * 2;
-    const h = rect.height - inset * 2;
-    const side = Math.min(w, h);
-    const ox = inset + (w - side) / 2;
-    const oy = inset + (h - side) / 2;
+    const inset = Math.max(28, Math.min(rect.width, rect.height) * 0.055);
+
+    // Start with the full stage minus a uniform margin.
+    let ax = inset, ay = inset;
+    let aw = rect.width - inset * 2;
+    let ah = rect.height - inset * 2;
+
+    // Reserve space around the convergence panel if it is on screen. The panel
+    // can be dodged either by starting the map further right or by stopping it
+    // higher up; pick whichever leaves the larger map.
+    const panel = chartpanel;
+    if (panel && panel.offsetParent !== null) {
+      const pr = panel.getBoundingClientRect();
+      const sr = stage.getBoundingClientRect();
+      const gap = 18;
+      const panelRight = pr.right - sr.left;      // stage-local x of panel's right edge
+      const panelTop = pr.top - sr.top;           // stage-local y of panel's top edge
+      const leftStart = Math.max(inset, panelRight + gap);
+      const bottomLimit = Math.min(rect.height - inset, panelTop - gap);
+
+      const sideIfLeft = Math.min(rect.width - inset - leftStart, ah);
+      const sideIfTop = Math.min(aw, bottomLimit - ay);
+
+      if (sideIfLeft >= sideIfTop) {
+        ax = leftStart; aw = rect.width - inset - leftStart;
+      } else {
+        ah = bottomLimit - ay;
+      }
+    }
+
+    const side = Math.max(40, Math.min(aw, ah));
+    const ox = ax + (aw - side) / 2;
+    const oy = ay + (ah - side) / 2;
     return { ox, oy, side, inset, rect };
   }
 
@@ -399,19 +427,22 @@ if (typeof document !== 'undefined') {
   }
 
   function drawFrameAndTicks(P) {
-    const r = P.rect;
+    // Frame hugs the fitted map square so ticks, brackets and compass align.
+    const x0 = P.ox, y0 = P.oy, s = P.side;
+    const x1 = x0 + s, y1 = y0 + s;
+
     // border frame
     sctx.strokeStyle = COL.lineSoft;
     sctx.lineWidth = 1;
-    sctx.strokeRect(P.inset, P.inset, r.width - P.inset * 2, r.height - P.inset * 2);
+    sctx.strokeRect(x0, y0, s, s);
 
     // corner brackets
     const b = 16;
     sctx.strokeStyle = COL.line;
     sctx.lineWidth = 1.5;
     const corners = [
-      [P.inset, P.inset, 1, 1], [r.width - P.inset, P.inset, -1, 1],
-      [P.inset, r.height - P.inset, 1, -1], [r.width - P.inset, r.height - P.inset, -1, -1],
+      [x0, y0, 1, 1], [x1, y0, -1, 1],
+      [x0, y1, 1, -1], [x1, y1, -1, -1],
     ];
     for (const [x, y, sx, sy] of corners) {
       sctx.beginPath();
@@ -427,22 +458,21 @@ if (typeof document !== 'undefined') {
     const divs = 8;
     for (let i = 0; i <= divs; i++) {
       const t = i / divs;
-      const x = P.ox + t * P.side;
-      const y = P.oy + t * P.side;
+      const x = x0 + t * s;
+      const y = y0 + t * s;
       const len = i % 2 === 0 ? 7 : 4;
       // top + bottom
-      sctx.beginPath(); sctx.moveTo(x, P.inset); sctx.lineTo(x, P.inset + len); sctx.stroke();
-      sctx.beginPath(); sctx.moveTo(x, P.rect.height - P.inset); sctx.lineTo(x, P.rect.height - P.inset - len); sctx.stroke();
+      sctx.beginPath(); sctx.moveTo(x, y0); sctx.lineTo(x, y0 + len); sctx.stroke();
+      sctx.beginPath(); sctx.moveTo(x, y1); sctx.lineTo(x, y1 - len); sctx.stroke();
       // left + right
-      sctx.beginPath(); sctx.moveTo(P.inset, y); sctx.lineTo(P.inset + len, y); sctx.stroke();
-      sctx.beginPath(); sctx.moveTo(P.rect.width - P.inset, y); sctx.lineTo(P.rect.width - P.inset - len, y); sctx.stroke();
+      sctx.beginPath(); sctx.moveTo(x0, y); sctx.lineTo(x0 + len, y); sctx.stroke();
+      sctx.beginPath(); sctx.moveTo(x1, y); sctx.lineTo(x1 - len, y); sctx.stroke();
     }
   }
 
   function drawCompass(P) {
-    const r = P.rect;
-    const cx = r.width - P.inset - 30;
-    const cy = r.height - P.inset - 30;
+    const cx = P.ox + P.side - 30;
+    const cy = P.oy + P.side - 30;
     const rad = 18;
     sctx.save();
     sctx.translate(cx, cy);
@@ -631,6 +661,12 @@ if (typeof document !== 'undefined') {
   }
 
   function init() {
+    // When embedded in the host platform (it frames the page and paints its own
+    // top nav), reserve a top safe area so our header is not hidden behind it.
+    let embedded = false;
+    try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+    if (embedded) document.body.classList.add('embedded');
+
     rebuild();
 
     bindSlider('c-cities', 'v-cities', (v) => `${v} cities`, (v) => { params.n = v | 0; rebuild(); }, true);
@@ -671,7 +707,7 @@ if (typeof document !== 'undefined') {
       else if (e.key === 'r') { state.ga.reset(); }
     });
 
-    setRunning(true);
+    setRunning(false); // wait for the operator to press Play
     requestAnimationFrame((t) => { last = t; frame(t); });
   }
 
